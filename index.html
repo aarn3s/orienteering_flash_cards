@@ -6,37 +6,50 @@
   <title>Flashcards</title>
   <style>
     /* Mobile-first styles */
-    body { display: flex; flex-direction: column; align-items: center; padding: 1rem; font-family: sans-serif; }
-    #card { width: 100%; max-width: 400px; text-align: center; }
+    body { display: flex; flex-direction: column; align-items: center; padding: 1rem; font-family: sans-serif; margin: 0; }
+    #card { width: 100%; max-width: 400px; text-align: center; margin-bottom: 4rem; }
     #card img { width: 100%; height: auto; border-radius: 0.5rem; }
-    #controls { display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin-top: 1rem; }
-    button { flex: 1; margin: 0 0.5rem; padding: 0.75rem; font-size: 1rem; border: none; border-radius: 0.5rem; background: #007bff; color: white; cursor: pointer; }
-    button:disabled { background: #aaa; cursor: default; }
-    @media (min-width: 768px) { button { font-size: 1.25rem; } }
+    #prev { position: fixed; bottom: 1rem; left: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 0.5rem; background: #007bff; color: white; cursor: pointer; }
+    #prev:disabled { background: #aaa; cursor: default; }
+    /* Fixed container for Show Answer & Next */
+    #actions { position: fixed; bottom: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
+    #show-answer, #next {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      color: white;
+      cursor: pointer;
+    }
+    #show-answer { background: lightgreen; color: black; }
+    #show-answer:disabled { background: #ccc; cursor: default; }
+    #next { background: #007bff; }
+    #next:disabled { background: #aaa; cursor: default; }
+    @media (min-width: 768px) {
+      #prev, #show-answer, #next { font-size: 1.25rem; }
+    }
   </style>
 </head>
 <body>
   <div id="card">
     <img id="question-img" src="" alt="Question">
-    <button id="show-answer">Show Answer</button>
     <div id="answer" style="display:none; margin-top:1rem;">
       <img id="answer-img" src="" alt="Answer">
       <p id="answer-text"></p>
     </div>
   </div>
-  <div id="controls">
-    <button id="prev">Previous</button>
+  <button id="prev">Previous</button>
+  <div id="actions">
+    <button id="show-answer">Show Answer</button>
     <button id="next">Next</button>
   </div>
   <script>
-    // Fisher–Yates shuffle
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
       }
     }
-
     const cards = [
       // Define 66 cards with custom text
       { qImg: 'pictures/q1.png',  aImg: 'pictures/a1.png',  text: 'Irtomaarinne' },
@@ -105,10 +118,7 @@
       { qImg: 'pictures/q65.png', aImg: 'pictures/a65.png', text: 'Pieni erikoiskohde' },
       { qImg: 'pictures/q66.png', aImg: 'pictures/a66.png', text: 'Pieni erikoiskohde' }
     ];
-
-    // Shuffle order on load
     shuffle(cards);
-
     let idx = 0;
     const qImg = document.getElementById('question-img');
     const aImg = document.getElementById('answer-img');
@@ -117,7 +127,6 @@
     const showBtn = document.getElementById('show-answer');
     const nextBtn = document.getElementById('next');
     const prevBtn = document.getElementById('prev');
-
     function loadCard(i) {
       answerDiv.style.display = 'none';
       qImg.src = cards[i].qImg;
@@ -125,17 +134,25 @@
       answerText.textContent = cards[i].text;
       prevBtn.disabled = (i === 0);
       nextBtn.disabled = (i === cards.length - 1);
+      showBtn.disabled = false;
     }
-
-    showBtn.addEventListener('click', () => { answerDiv.style.display = 'block'; });
-    nextBtn.addEventListener('click', () => { idx = Math.min(idx + 1, cards.length - 1); loadCard(idx); });
-    prevBtn.addEventListener('click', () => { idx = Math.max(idx - 1, 0); loadCard(idx); });
+    showBtn.addEventListener('click', () => {
+      answerDiv.style.display = 'block';
+      showBtn.disabled = true;
+    });
+    nextBtn.addEventListener('click', () => {
+      idx = Math.min(idx + 1, cards.length - 1);
+      loadCard(idx);
+    });
+    prevBtn.addEventListener('click', () => {
+      idx = Math.max(idx - 1, 0);
+      loadCard(idx);
+    });
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') nextBtn.click();
       if (e.key === 'ArrowLeft') prevBtn.click();
       if (e.key === 'Enter') showBtn.click();
     });
-
     loadCard(idx);
   </script>
 </body>
