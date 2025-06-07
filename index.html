@@ -6,50 +6,13 @@
   <title>Flashcards</title>
   <style>
     /* Mobile-first styles */
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem;
-      font-family: sans-serif;
-    }
-    #card {
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-    #card img {
-      width: 100%;
-      height: auto;
-      border-radius: 0.5rem;
-    }
-    #controls {
-      display: flex;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 400px;
-      margin-top: 1rem;
-    }
-    button {
-      flex: 1;
-      margin: 0 0.5rem;
-      padding: 0.75rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 0.5rem;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-    }
-    button:disabled {
-      background: #aaa;
-      cursor: default;
-    }
-    @media (min-width: 768px) {
-      button {
-        font-size: 1.25rem;
-      }
-    }
+    body { display: flex; flex-direction: column; align-items: center; padding: 1rem; font-family: sans-serif; }
+    #card { width: 100%; max-width: 400px; text-align: center; }
+    #card img { width: 100%; height: auto; border-radius: 0.5rem; }
+    #controls { display: flex; justify-content: space-between; width: 100%; max-width: 400px; margin-top: 1rem; }
+    button { flex: 1; margin: 0 0.5rem; padding: 0.75rem; font-size: 1rem; border: none; border-radius: 0.5rem; background: #007bff; color: white; cursor: pointer; }
+    button:disabled { background: #aaa; cursor: default; }
+    @media (min-width: 768px) { button { font-size: 1.25rem; } }
   </style>
 </head>
 <body>
@@ -66,7 +29,15 @@
     <button id="next">Next</button>
   </div>
   <script>
-const cards = [
+    // Fisher–Yates shuffle
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    const cards = [
       // Define 66 cards with custom text
       { qImg: 'pictures/q1.png',  aImg: 'pictures/a1.png',  text: 'Irtomaarinne' },
       { qImg: 'pictures/q2.png',  aImg: 'pictures/a2.png',  text: 'Maavalli' },
@@ -134,8 +105,11 @@ const cards = [
       { qImg: 'pictures/q65.png', aImg: 'pictures/a65.png', text: 'Pieni erikoiskohde' },
       { qImg: 'pictures/q66.png', aImg: 'pictures/a66.png', text: 'Pieni erikoiskohde' }
     ];
-    let idx = 0;
 
+    // Shuffle order on load
+    shuffle(cards);
+
+    let idx = 0;
     const qImg = document.getElementById('question-img');
     const aImg = document.getElementById('answer-img');
     const answerText = document.getElementById('answer-text');
@@ -153,17 +127,9 @@ const cards = [
       nextBtn.disabled = (i === cards.length - 1);
     }
 
-    showBtn.addEventListener('click', () => {
-      answerDiv.style.display = 'block';
-    });
-    nextBtn.addEventListener('click', () => {
-      idx = Math.min(idx + 1, cards.length - 1);
-      loadCard(idx);
-    });
-    prevBtn.addEventListener('click', () => {
-      idx = Math.max(idx - 1, 0);
-      loadCard(idx);
-    });
+    showBtn.addEventListener('click', () => { answerDiv.style.display = 'block'; });
+    nextBtn.addEventListener('click', () => { idx = Math.min(idx + 1, cards.length - 1); loadCard(idx); });
+    prevBtn.addEventListener('click', () => { idx = Math.max(idx - 1, 0); loadCard(idx); });
     document.addEventListener('keydown', e => {
       if (e.key === 'ArrowRight') nextBtn.click();
       if (e.key === 'ArrowLeft') prevBtn.click();
