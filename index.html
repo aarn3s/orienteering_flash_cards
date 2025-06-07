@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flashcards</title>
+  <style>
+    /* Mobile-first styles */
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      font-family: sans-serif;
+    }
+    #card {
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    #card img {
+      width: 100%;
+      height: auto;
+      border-radius: 0.5rem;
+    }
+    #controls {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 400px;
+      margin-top: 1rem;
+    }
+    button {
+      flex: 1;
+      margin: 0 0.5rem;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      background: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #aaa;
+      cursor: default;
+    }
+    @media (min-width: 768px) {
+      button {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="card">
+    <img id="question-img" src="" alt="Question">
+    <button id="show-answer">Show Answer</button>
+    <div id="answer" style="display:none; margin-top:1rem;">
+      <img id="answer-img" src="" alt="Answer">
+      <p id="answer-text"></p>
+    </div>
+  </div>
+  <div id="controls">
+    <button id="prev">Previous</button>
+    <button id="next">Next</button>
+  </div>
+  <script>
+    const cards = [
+      { qImg: 'q1.jpg', aImg: 'a1.jpg', text: 'Answer 1' },
+      { qImg: 'q2.jpg', aImg: 'a2.jpg', text: 'Answer 2' }
+      // add more cards here
+    ];
+    let idx = 0;
+
+    const qImg = document.getElementById('question-img');
+    const aImg = document.getElementById('answer-img');
+    const answerText = document.getElementById('answer-text');
+    const answerDiv = document.getElementById('answer');
+    const showBtn = document.getElementById('show-answer');
+    const nextBtn = document.getElementById('next');
+    const prevBtn = document.getElementById('prev');
+
+    function loadCard(i) {
+      answerDiv.style.display = 'none';
+      qImg.src = cards[i].qImg;
+      aImg.src = cards[i].aImg;
+      answerText.textContent = cards[i].text;
+      prevBtn.disabled = (i === 0);
+      nextBtn.disabled = (i === cards.length - 1);
+    }
+
+    showBtn.addEventListener('click', () => {
+      answerDiv.style.display = 'block';
+    });
+    nextBtn.addEventListener('click', () => {
+      idx = Math.min(idx + 1, cards.length - 1);
+      loadCard(idx);
+    });
+    prevBtn.addEventListener('click', () => {
+      idx = Math.max(idx - 1, 0);
+      loadCard(idx);
+    });
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') nextBtn.click();
+      if (e.key === 'ArrowLeft') prevBtn.click();
+      if (e.key === 'Enter') showBtn.click();
+    });
+
+    loadCard(idx);
+  </script>
+</body>
+</html>
