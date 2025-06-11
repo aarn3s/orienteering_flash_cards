@@ -9,6 +9,7 @@ class UI {
     this.scoreManager = new ScoreManager();
     this.gameTimer = null;
     this.timeLeft = GAME_DURATION;
+    this.timerPaused = false;
     this.setupEventListeners();
     this.createFloatingShapes();
     this.updateHighScoresList();
@@ -71,11 +72,14 @@ class UI {
 
   startTimer() {
     if (this.gameTimer) clearInterval(this.gameTimer);
+    this.timerPaused = false;
     this.gameTimer = setInterval(() => {
-      this.timeLeft--;
-      this.updateTimer();
-      if (this.timeLeft <= 0) {
-        this.endGame();
+      if (!this.timerPaused) {
+        this.timeLeft--;
+        this.updateTimer();
+        if (this.timeLeft <= 0) {
+          this.endGame();
+        }
       }
     }, 1000);
   }
@@ -105,6 +109,12 @@ class UI {
     document.getElementById('mark-correct').style.display = 'block';
     document.getElementById('mark-wrong').style.display = 'block';
     document.getElementById('show-answer').style.display = 'none';
+    
+    // Pause the timer
+    this.timerPaused = true;
+    
+    // Visual indication that timer is paused
+    document.getElementById('timer-progress').style.opacity = '0.5';
   }
 
   showTimeBonus(seconds) {
@@ -131,6 +141,10 @@ class UI {
   }
 
   markAnswer(isCorrect) {
+    // Resume the timer
+    this.timerPaused = false;
+    document.getElementById('timer-progress').style.opacity = '1';
+    
     const result = this.game.markAnswer(isCorrect);
     
     if (isCorrect && result.timeBonus > 0) {
