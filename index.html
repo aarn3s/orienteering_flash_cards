@@ -5,155 +5,223 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Flashcards</title>
   <style>
-    /* Mobile-first styles */
-    body { display: flex; flex-direction: column; align-items: center; padding: 1rem; font-family: sans-serif; margin: 0; }
-    #card { width: 100%; max-width: 400px; text-align: center; margin-bottom: 4rem; }
-    #card img { width: 100%; height: auto; border-radius: 0.5rem; }
-    #prev { position: fixed; bottom: 1rem; left: 1rem; padding: 0.75rem 1rem; font-size: 1rem; border: none; border-radius: 0.5rem; background: #007bff; color: white; cursor: pointer; }
-    #prev:disabled { background: #aaa; cursor: default; }
-    /* Fixed container for Show Answer & Next */
-    #actions { position: fixed; bottom: 1rem; right: 1rem; display: flex; gap: 0.5rem; }
-    #show-answer, #next {
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 0.5rem;
-      color: white;
-      cursor: pointer;
+    /* Reset and box-sizing */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; overflow-x: hidden; }
+
+    :root {
+      --primary: #007bff;
+      --success: #28a745;
+      --danger: #dc3545;
+      --gray: #6c757d;
+      --light: #f8f9fa;
+      --dark: #343a40;
     }
-    #show-answer { background: lightgreen; color: black; }
-    #show-answer:disabled { background: #ccc; cursor: default; }
-    #next { background: #007bff; }
-    #next:disabled { background: #aaa; cursor: default; }
-    @media (min-width: 768px) {
-      #prev, #show-answer, #next { font-size: 1.25rem; }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--light);
+      color: var(--dark);
+    }
+
+    /* Start screen */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--light);
+      z-index: 2000;
+      transition: opacity 0.5s ease;
+    }
+    #start-screen.hidden { opacity: 0; pointer-events: none; }
+
+    .floating-shapes { position: absolute; width: 100%; height: 100%; overflow: hidden; z-index: -1; }
+    .shape { position: absolute; background: var(--primary); opacity: 0.1; border-radius: 50%; animation: float 20s infinite linear; }
+    @keyframes float { 0% { transform: translate(0,0) rotate(0deg); } 100% { transform: translate(var(--tx),var(--ty)) rotate(360deg); } }
+
+    #start-button { font-size: 1.5rem; padding: 1rem 2rem; border-radius: 3rem; background: var(--primary); color: #fff; border: none; cursor: pointer; transition: transform 0.3s ease; margin: 1rem 0; }
+    #start-button:hover { transform: scale(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+    .high-scores {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 90%;
+      margin: 0.5rem auto;
+    }
+    .high-scores h2 { text-align: center; margin-bottom: 1rem; }
+    .score-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      margin: 0.5rem 0;
+      transition: transform 0.3s ease;
+      color: var(--dark);
+    }
+    .score-item.new {
+      animation: newScore 1s ease-out;
+      font-weight: bold;
+      background: rgba(0,123,255,0.1);
+    }
+    @keyframes newScore {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    #reset-scores { font-size: 0.9rem; padding: 0.5rem 1rem; border-radius: 2rem; background: var(--danger); color: #fff; border: none; cursor: pointer; transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0.8; }
+    #reset-scores:hover { opacity: 1; transform: scale(1.05); }
+
+    .attribution { font-size: 0.8rem; color: var(--gray); opacity: 0.8; margin-top: 0.5rem; }
+
+    /* Game screen */
+    #game-screen {
+      display: none;
+      position: relative;
+      inset: 0;
+      padding: 60px 0 70px;
+      overflow-y: auto;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      display: flex;
+    }
+
+    /* Timer & score bars */
+    #timer-bar { position: fixed; top: 0; left: 0; width: 100%; height: 30px; background: var(--gray); z-index: 101; }
+    #timer-progress { width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; }
+    
+    /* Time bonus animation */
+    .time-bonus {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.2rem;
+      text-shadow: 0 0 10px rgba(255,255,255,0.5);
+      animation: timeBonus 1s ease-out forwards;
+      z-index: 102;
+    }
+
+    @keyframes timeBonus {
+      0% { opacity: 0; transform: translateY(-50%) scale(0.5); }
+      20% { opacity: 1; transform: translateY(-50%) scale(1.2); }
+      100% { opacity: 0; transform: translateY(-150%) scale(1); }
+    }
+
+    /* Points bonus animation */
+    .points-bonus {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--success);
+      font-size: 3rem;
+      font-weight: bold;
+      text-shadow: 0 0 20px rgba(40,167,69,0.3);
+      animation: pointsBonus 1s ease-out forwards;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    @keyframes pointsBonus {
+      0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+      20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      80% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -100%) scale(1); }
+    }
+
+    #score-bar { position: fixed; top: 30px; left: 0; right: 0; height: 30px; background: #fff; padding: 0 1rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 100; font-size: 0.9rem; }
+    #score-text { font-weight: 500; }
+    .badge { display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 2rem; transition: transform 0.3s ease, opacity 0.3s ease; opacity: 0; transform: scale(0.8); }
+    .badge.visible { opacity: 1; transform: scale(1); }
+
+    /* Card */
+    #card { width: 90%; max-width: 500px; background: #fff; border-radius: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; padding: 1rem; margin: 0.5rem auto; display: flex; flex-direction: column; align-items: center; }
+    .image-container { width: 100%; aspect-ratio: 4/3; background: var(--light); border-radius: 0.5rem; overflow: hidden; display: flex; justify-content: center; align-items: center; position: relative; }
+    #card img { width: 100%; height: 100%; object-fit: contain; }
+
+    #answer { width: 100%; max-height: 0; opacity: 0; overflow: hidden; transition: all 0.3s ease; }
+    #answer.visible { max-height: none; opacity: 1; margin-top: 0.25rem; padding-top: 0.5rem; border-top: 1px solid var(--light); }
+    #answer-text { font-size: 1.1rem; margin: 0.25rem 0; font-weight: 500; padding: 0 1rem; }
+
+    /* Buttons */
+    .btn { padding: 0.75rem 1.5rem; font-size: 1rem; text-transform: uppercase; font-weight: 500; letter-spacing: 0.5px; border: none; border-radius: 2rem; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.2s ease; min-width: 120px; }
+    #show-answer { background: var(--primary); color: #fff; }
+    #mark-correct { background: var(--success); color: #fff; display: none; }
+    #mark-wrong { background: var(--danger); color: #fff; display: none; position: fixed; bottom: 1rem; left: 1rem; }
+    #actions-right { display: flex; gap: 0.5rem; position: fixed; bottom: 1rem; right: 1rem; }
+    #play-again { background: var(--primary); color: #fff; margin-top: 1rem; padding: 0.75rem 1.5rem; font-size: 1rem; }
+
+    /* Score screen */
+    #score-screen {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 2000;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #score-screen .high-scores { margin: 2rem auto; }
+    #final-score { font-size: 3rem; color: var(--primary); margin: 1rem 0; }
+
+    /* Confetti */
+    #confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 2001; }
+    .confetti { position: absolute; width: 10px; height: 10px; background-color: var(--primary); animation: confettiFall 3s forwards; }
+    @keyframes confettiFall { 0% { transform: translateY(-100%) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+
+    /* Media queries */
+    @media (max-width: 768px) {
+      .image-container { width: 95%; }
+      .btn { padding: 0.5rem 1rem; font-size: 0.9rem; min-width: auto; }
+      #mark-wrong { left: 0.5rem; bottom: 0.5rem; }
+      #actions-right { right: 0.5rem; bottom: 0.5rem; gap: 0.25rem; }
+      #timer-progress, #score-bar { font-size: 0.9rem; }
     }
   </style>
 </head>
 <body>
-  <div id="card">
-    <img id="question-img" src="" alt="Question">
-    <div id="answer" style="display:none; margin-top:1rem;">
-      <img id="answer-img" src="" alt="Answer">
-      <p id="answer-text"></p>
+  <div id="start-screen">
+    <div class="floating-shapes"></div>
+    <h1>Orienteering Flash Cards</h1>
+    <button id="start-button">Start Game</button>
+    <div class="high-scores">
+      <h2>High Scores</h2>
+      <div id="high-scores-list"></div>
+      <button id="reset-scores" class="btn">Reset Scores</button>
+    </div>
+    <div class="attribution">Kuvat Tapio Tiura 2010</div>
+  </div>
+
+  <div id="game-screen">
+    <div id="timer-bar"><div id="timer-progress"></div></div>
+    <div id="score-bar"><span id="score-text"></span><div id="achievements"></div></div>
+    <div id="card">
+      <div class="image-container"><img id="question-img" src="" alt="Question"></div>
+      <div id="answer"><div class="image-container"><img id="answer-img" src="" alt="Answer"></div><p id="answer-text"></p></div>
+    </div>
+    <button id="mark-wrong" class="btn">Wrong</button>
+    <div id="actions-right">
+      <button id="show-answer" class="btn">Show Answer</button>
+      <button id="mark-correct" class="btn">Correct</button>
     </div>
   </div>
-  <button id="prev">Previous</button>
-  <div id="actions">
-    <button id="show-answer">Show Answer</button>
-    <button id="next">Next</button>
+
+  <div id="score-screen">
+    <h1>Time's Up!</h1>
+    <div id="final-score"></div>
+    <div class="high-scores"><h2>High Scores</h2><div id="final-high-scores-list"></div></div>
+    <button id="play-again" class="btn">Play Again</button>
   </div>
-  <script>
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-    }
-    const cards = [
-      // Define 66 cards with custom text
-      { qImg: 'pictures/q1.png',  aImg: 'pictures/a1.png',  text: 'Irtomaarinne' },
-      { qImg: 'pictures/q2.png',  aImg: 'pictures/a2.png',  text: 'Maavalli' },
-      { qImg: 'pictures/q3.png',  aImg: 'pictures/a3.png',  text: 'Uurre' },
-      { qImg: 'pictures/q4.png',  aImg: 'pictures/a4.png',  text: 'Kuiva pieni uoma' },
-      { qImg: 'pictures/q5.png',  aImg: 'pictures/a5.png',  text: 'Kukkula' },
-      { qImg: 'pictures/q6.png',  aImg: 'pictures/a6.png',  text: 'Kukkula' },
-      { qImg: 'pictures/q7.png',  aImg: 'pictures/a7.png',  text: 'Pieni kumpare' },
-      { qImg: 'pictures/q8.png',  aImg: 'pictures/a8.png',  text: 'Suppa' },
-      { qImg: 'pictures/q9.png',  aImg: 'pictures/a9.png',  text: 'Pieni suppa' },
-      { qImg: 'pictures/q10.png', aImg: 'pictures/a10.png', text: 'Pieni kaivettu kuoppa' },
-      { qImg: 'pictures/q11.png', aImg: 'pictures/a11.png', text: 'Maaston erikoiskohde (huom ruskea väri)' },
-      { qImg: 'pictures/q12.png', aImg: 'pictures/a12.png', text: 'Ylipääsemätön jyrkänne' },
-      { qImg: 'pictures/q13.png', aImg: 'pictures/a13.png', text: 'Pieni jyrkänne' },
-      { qImg: 'pictures/q14.png', aImg: 'pictures/a14.png', text: 'Kivi' },
-      { qImg: 'pictures/q15.png', aImg: 'pictures/a15.png', text: 'Suuri kivi' },
-      { qImg: 'pictures/q16.png', aImg: 'pictures/a16.png', text: 'Louhikko' },
-      { qImg: 'pictures/q17.png', aImg: 'pictures/a17.png', text: 'Kiviryhmä' },
-      { qImg: 'pictures/q18.png', aImg: 'pictures/a18.png', text: 'Kivikko' },
-      { qImg: 'pictures/q19.png', aImg: 'pictures/a19.png', text: 'Avokallio' },
-      { qImg: 'pictures/q20.png', aImg: 'pictures/a20.png', text: 'Vesialue' },
-      { qImg: 'pictures/q21.png', aImg: 'pictures/a21.png', text: 'Leveä puro tai oja' },
-      { qImg: 'pictures/q22.png', aImg: 'pictures/a22.png', text: 'Pieni puro tai oja' },
-      { qImg: 'pictures/q23.png', aImg: 'pictures/a23.png', text: 'Epäselvä oja' },
-      { qImg: 'pictures/q24.png', aImg: 'pictures/a24.png', text: 'Suojuotti < 5m leveä' },
-      { qImg: 'pictures/q25.png', aImg: 'pictures/a25.png', text: 'Ylipääsemätön suo' },
-      { qImg: 'pictures/q26.png', aImg: 'pictures/a26.png', text: 'Suo' },
-      { qImg: 'pictures/q27.png', aImg: 'pictures/a27.png', text: 'Avoin alue, helppokulkuinen' },
-      { qImg: 'pictures/q28.png', aImg: 'pictures/a28.png', text: 'Puoliavoin alue, helppokulkuinen' },
-      { qImg: 'pictures/q29.png', aImg: 'pictures/a29.png', text: 'Avoin maasto' },
-      { qImg: 'pictures/q30.png', aImg: 'pictures/a30.png', text: 'Puoliavoin maasto, hakkuuala' },
-      { qImg: 'pictures/q31.png', aImg: 'pictures/a31.png', text: 'Metsä' },
-      { qImg: 'pictures/q32.png', aImg: 'pictures/a32.png', text: 'Hidastava metsä' },
-      { qImg: 'pictures/q33.png', aImg: 'pictures/a33.png', text: 'Hidastava maapohja (kaadettuja puita)' },
-      { qImg: 'pictures/q34.png', aImg: 'pictures/a34.png', text: 'Vaikeakulkuinen metsä' },
-      { qImg: 'pictures/q35.png', aImg: 'pictures/a35.png', text: 'Vaikeakulkuinen maapohja' },
-      { qImg: 'pictures/q36.png', aImg: 'pictures/a36.png', text: 'Erittäin vaikeakulkuinen metsä' },
-      { qImg: 'pictures/q37.png', aImg: 'pictures/a37.png', text: 'Yhteen suuntaan helppokulkuinen metsä' },
-      { qImg: 'pictures/q39.png', aImg: 'pictures/a39.png', text: 'Puutarha' },
-      { qImg: 'pictures/q40.png', aImg: 'pictures/a40.png', text: 'Viljelty maa' },
-      { qImg: 'pictures/q41.png', aImg: 'pictures/a41.png', text: 'Selvä kuvioraja' },
-      { qImg: 'pictures/q42.png', aImg: 'pictures/a42.png', text: 'Kasvillisuuden erikoiskohde' },
-      { qImg: 'pictures/q43.png', aImg: 'pictures/a43.png', text: 'Yksittäinen puu' },
-      { qImg: 'pictures/q44.png', aImg: 'pictures/a44.png', text: 'Kasvillisuuden erikoiskohde' },
-      { qImg: 'pictures/q45.png', aImg: 'pictures/a45.png', text: 'Yksikaistainen maantie' },
-      { qImg: 'pictures/q46.png', aImg: 'pictures/a46.png', text: 'Ajotie' },
-      { qImg: 'pictures/q47.png', aImg: 'pictures/a47.png', text: 'Polku' },
-      { qImg: 'pictures/q48.png', aImg: 'pictures/a48.png', text: 'Epäselvä polku' },
-      { qImg: 'pictures/q49.png', aImg: 'pictures/a49.png', text: 'Pieni polku' },
-      { qImg: 'pictures/q50.png', aImg: 'pictures/a50.png', text: 'Juontoura (metsäköneen jäljet)' },
-      { qImg: 'pictures/q51.png', aImg: 'pictures/a51.png', text: 'Kapea linja' },
-      { qImg: 'pictures/q52.png', aImg: 'pictures/a52.png', text: 'Polkusilta (pitkospuut)' },
-      { qImg: 'pictures/q53.png', aImg: 'pictures/a53.png', text: 'Sähkölinja' },
-      { qImg: 'pictures/q54.png', aImg: 'pictures/a54.png', text: 'Kiviaita' },
-      { qImg: 'pictures/q55.png', aImg: 'pictures/a55.png', text: 'Aita' },
-      { qImg: 'pictures/q56.png', aImg: 'pictures/a56.png', text: 'Korkea aita' },
-      { qImg: 'pictures/q57.png', aImg: 'pictures/a57.png', text: 'Rakennus' },
-      { qImg: 'pictures/q58.png', aImg: 'pictures/a58.png', text: 'Pihamaa' },
-      { qImg: 'pictures/q59.png', aImg: 'pictures/a59.png', text: 'Kenttä' },
-      { qImg: 'pictures/q60.png', aImg: 'pictures/a60.png', text: 'Raunio' },
-      { qImg: 'pictures/q61.png', aImg: 'pictures/a61.png', text: 'Korkea torni' },
-      { qImg: 'pictures/q62.png', aImg: 'pictures/a62.png', text: 'Matala torni' },
-      { qImg: 'pictures/q63.png', aImg: 'pictures/a63.png', text: 'Rajapyykki' },
-      { qImg: 'pictures/q64.png', aImg: 'pictures/a64.png', text: 'Ruokintateline' },
-      { qImg: 'pictures/q65.png', aImg: 'pictures/a65.png', text: 'Pieni erikoiskohde' },
-      { qImg: 'pictures/q66.png', aImg: 'pictures/a66.png', text: 'Pieni erikoiskohde' }
-    ];
-    shuffle(cards);
-    let idx = 0;
-    const qImg = document.getElementById('question-img');
-    const aImg = document.getElementById('answer-img');
-    const answerText = document.getElementById('answer-text');
-    const answerDiv = document.getElementById('answer');
-    const showBtn = document.getElementById('show-answer');
-    const nextBtn = document.getElementById('next');
-    const prevBtn = document.getElementById('prev');
-    function loadCard(i) {
-      answerDiv.style.display = 'none';
-      qImg.src = cards[i].qImg;
-      aImg.src = cards[i].aImg;
-      answerText.textContent = cards[i].text;
-      prevBtn.disabled = (i === 0);
-      nextBtn.disabled = (i === cards.length - 1);
-      showBtn.disabled = false;
-    }
-    showBtn.addEventListener('click', () => {
-      answerDiv.style.display = 'block';
-      showBtn.disabled = true;
-    });
-    nextBtn.addEventListener('click', () => {
-      idx = Math.min(idx + 1, cards.length - 1);
-      loadCard(idx);
-    });
-    prevBtn.addEventListener('click', () => {
-      idx = Math.max(idx - 1, 0);
-      loadCard(idx);
-    });
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowRight') nextBtn.click();
-      if (e.key === 'ArrowLeft') prevBtn.click();
-      if (e.key === 'Enter') showBtn.click();
-    });
-    loadCard(idx);
-  </script>
+
+  <div id="confetti-container"></div>
+  <script type="module" src="js/ui.js"></script>
 </body>
 </html>
