@@ -10,6 +10,7 @@ class UI {
     this.gameTimer = null;
     this.timeLeft = GAME_DURATION;
     this.timerPaused = false;
+    this.bossLevelTimers = [5, 4.5, 4, 3.5, 3, 3, 2.5, 2.5, 2, 2, 1.5, 1.5, 1, 1];
     this.setupEventListeners();
     this.createFloatingShapes();
     this.updateHighScoresList();
@@ -52,6 +53,7 @@ class UI {
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').style.display = 'block';
     document.getElementById('score-screen').style.display = 'none';
+    document.body.classList.remove('boss-mode'); // Remove boss mode visuals
     
     // Reset scroll position and ensure proper viewport
     window.scrollTo(0, 0);
@@ -67,6 +69,7 @@ class UI {
   }
 
   restartGame() {
+    document.body.classList.remove('boss-mode'); // Remove boss mode visuals
     this.startGame();
   }
 
@@ -75,32 +78,56 @@ class UI {
     this.timerPaused = false;
     this.gameTimer = setInterval(() => {
       if (!this.timerPaused) {
-        this.timeLeft--;
+        this.timeLeft -= 0.1; // Update every 100ms for smoother countdown
         this.updateTimer();
         if (this.timeLeft <= 0) {
           this.endGame();
         }
       }
-    }, 1000);
+    }, 100);
   }
 
   updateTimer() {
-    const progress = (this.timeLeft / GAME_DURATION) * 100;
+    const progress = (this.timeLeft / (this.game.isBossLevel ? this.getBossLevelTime() : GAME_DURATION)) * 100;
     const timerBar = document.getElementById('timer-progress');
     timerBar.style.width = progress + '%';
     
     // Add color transitions based on time left
-    if (this.timeLeft <= 5) {
+    if (this.timeLeft <= 1) {
       timerBar.style.backgroundColor = 'var(--danger)';
-    } else if (this.timeLeft <= 10) {
+    } else if (this.timeLeft <= 2) {
       timerBar.style.backgroundColor = '#ffc107'; // warning yellow
     } else {
-      timerBar.style.backgroundColor = 'var(--primary)';
+      timerBar.style.backgroundColor = this.game.isBossLevel ? 'var(--danger)' : 'var(--primary)';
     }
 
-    // Update timer text
-    const seconds = this.timeLeft.toString().padStart(2, '0');
+    // Update timer text with one decimal place
+    const seconds = this.timeLeft.toFixed(1);
     timerBar.textContent = `${seconds}s`;
+  }
+
+  getBossLevelTime() {
+    const questionIndex = this.game.bossLevelQuestionCount;
+    return questionIndex >= this.bossLevelTimers.length ? 1 : this.bossLevelTimers[questionIndex];
+  }
+
+  showBossLevelAnnouncement() {
+    const announcement = document.getElementById('boss-level-announcement');
+    announcement.style.display = 'flex';
+    document.body.classList.add('boss-mode');
+    
+    // Add dramatic sound effect or visual effects here if desired
+    
+    // Hide announcement after 2 seconds
+    setTimeout(() => {
+      announcement.style.display = 'none';
+      this.startBossLevel();
+    }, 2000);
+  }
+
+  startBossLevel() {
+    this.timeLeft = 5; // First question gets 5 seconds
+    this.updateTimer();
   }
 
   showAnswer() {
@@ -128,8 +155,7 @@ class UI {
   }
 
   showPointsBonus(points) {
-    // Only show points bonus for 20+ streak
-    if (this.game.streak < 20) return;
+    if (!points) return;
     
     const bonus = document.createElement('div');
     bonus.className = 'points-bonus';
@@ -147,14 +173,26 @@ class UI {
     
     const result = this.game.markAnswer(isCorrect);
     
-    if (isCorrect && result.timeBonus > 0) {
-      this.timeLeft += result.timeBonus;
-      this.showTimeBonus(result.timeBonus);
-      this.updateTimer();
+    if (result.gameOver) {
+      this.endGame();
+      return;
     }
 
-    if (isCorrect && result.pointsBonus > 0) {
-      this.showPointsBonus(result.pointsBonus);
+    if (result.bossLevel && this.game.bossLevelQuestionCount === 1) {
+      // First BOSS LEVEL question - show announcement
+      this.showBossLevelAnnouncement();
+    }
+
+    if (isCorrect) {
+      if (result.bossLevel) {
+        // Set timer for next question
+        this.timeLeft = this.getBossLevelTime();
+        this.showPointsBonus(result.pointsBonus);
+      } else if (result.timeBonus > 0) {
+        this.timeLeft += result.timeBonus;
+        this.showTimeBonus(result.timeBonus);
+      }
+      this.updateTimer();
     }
 
     this.updateScore();
@@ -241,6 +279,7 @@ class UI {
 
   endGame() {
     clearInterval(this.gameTimer);
+    document.body.classList.remove('boss-mode'); // Remove boss mode visuals
     const finalScore = this.game.score;
     document.getElementById('final-score').textContent = finalScore;
     document.getElementById('game-screen').style.display = 'none';

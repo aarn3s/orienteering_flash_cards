@@ -8,6 +8,8 @@ export class Game {
     this.score = 0;
     this.streak = load('streak', 0);
     this.achievements = load('badges', []);
+    this.isBossLevel = false;
+    this.bossLevelQuestionCount = 0;
     this.loadCards();
   }
 
@@ -38,13 +40,32 @@ export class Game {
 
   markAnswer(isCorrect) {
     if (isCorrect) {
-      // Base point (1) + bonus points (2) for 20+ streak
+      // Check for BOSS LEVEL trigger
+      if (!this.isBossLevel && this.score >= 99) {
+        this.isBossLevel = true;
+        this.bossLevelQuestionCount = 0;
+      }
+
+      // BOSS LEVEL scoring
+      if (this.isBossLevel) {
+        this.score += 10; // Fixed 10 points in BOSS LEVEL
+        this.streak++;
+        this.bossLevelQuestionCount++;
+        return {
+          timeBonus: 0, // No time bonus in BOSS LEVEL
+          pointsBonus: 10,
+          achievements: this.checkAchievements(),
+          bossLevel: true,
+          bossLevelQuestion: this.bossLevelQuestionCount
+        };
+      }
+
+      // Regular game scoring
       const pointsBonus = this.streak >= 20 ? 3 : 1;
       this.score += pointsBonus;
       this.streak++;
       
-      // Calculate time bonus based on streak
-      let timeBonus = 1; // Base time bonus
+      let timeBonus = 1;
       if (this.streak >= 20) timeBonus = 4;
       else if (this.streak >= 10) timeBonus = 3;
       else if (this.streak >= 5) timeBonus = 2;
@@ -55,15 +76,20 @@ export class Game {
       return {
         timeBonus,
         pointsBonus,
-        achievements: newAchievements
+        achievements: newAchievements,
+        bossLevel: false
       };
     } else {
       this.streak = 0;
+      this.isBossLevel = false;
+      this.bossLevelQuestionCount = 0;
       save('streak', this.streak);
       return {
         timeBonus: 0,
         pointsBonus: 0,
-        achievements: []
+        achievements: [],
+        bossLevel: false,
+        gameOver: this.isBossLevel // End game if wrong answer in BOSS LEVEL
       };
     }
   }
@@ -146,6 +172,8 @@ export class Game {
     this.score = 0;
     this.currentCardIndex = 0;
     this.streak = 0;
+    this.isBossLevel = false;
+    this.bossLevelQuestionCount = 0;
     save('streak', this.streak);
     this.shuffle();
   }
